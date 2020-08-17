@@ -5,7 +5,7 @@ package com.tangledwebgames.repo
  */
 interface ScoreRepository {
 
-    fun addUser(name: String): User
+    suspend fun addUser(name: String): User
 
     fun getUser(userId: Long): User?
 
@@ -13,13 +13,13 @@ interface ScoreRepository {
 
     fun getName(userId: Long): String?
 
-    fun setName(userId: Long, name: String)
+    suspend fun setName(userId: Long, name: String)
 
     fun getScore(userId: Long): Long?
 
-    fun setScore(userId: Long, score: Long)
+    suspend fun setScore(userId: Long, score: Long)
 
-    fun newScore(userId: Long, score: Long) {
+    suspend fun newScore(userId: Long, score: Long) {
         getScore(userId)?.let {
             if (it < score) setScore(userId, score)
         }

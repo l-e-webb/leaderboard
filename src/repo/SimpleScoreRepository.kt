@@ -2,20 +2,21 @@ package com.tangledwebgames.repo
 
 /**
  * Basic implementation of [ScoreRepository] interface which holds an array of users in memory.
- * Does not save data to disk, not optimized for large amounts of data, cannot handle concurrent
- * modification.
+ * Does not save data to disk, not optimized for large amounts of data.
  */
 class SimpleScoreRepository: ScoreRepository {
 
     private val userList: MutableList<User> = mutableListOf()
 
-    override fun addUser(name: String): User {
-        return User(
-            id = userList.size.toLong(),
-            name = name,
-            highScore = 0L
-        ).also {
-            userList.add(it)
+    override suspend fun addUser(name: String): User {
+        return synchronized(userList) {
+            User(
+                id = userList.size.toLong(),
+                name = name,
+                highScore = 0L
+            ).also {
+                userList.add(it)
+            }
         }
     }
 
@@ -35,9 +36,11 @@ class SimpleScoreRepository: ScoreRepository {
         return getUser(userId)?.name
     }
 
-    override fun setName(userId: Long, name: String) {
-        getUser(userId)?.let {
-            userList[it.id.toInt()] = it.copy(name = name)
+    override suspend fun setName(userId: Long, name: String) {
+        synchronized(userList) {
+            getUser(userId)?.let {
+                userList[it.id.toInt()] = it.copy(name = name)
+            }
         }
     }
 
@@ -45,9 +48,11 @@ class SimpleScoreRepository: ScoreRepository {
         return getUser(userId)?.highScore
     }
 
-    override fun setScore(userId: Long, score: Long) {
-        getUser(userId)?.let {
-            userList[it.id.toInt()] = it.copy(highScore = score)
+    override suspend fun setScore(userId: Long, score: Long) {
+        synchronized(userList) {
+            getUser(userId)?.let {
+                userList[it.id.toInt()] = it.copy(highScore = score)
+            }
         }
     }
 
