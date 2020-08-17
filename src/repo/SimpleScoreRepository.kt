@@ -1,5 +1,10 @@
 package com.tangledwebgames.repo
 
+/**
+ * Basic implementation of [ScoreRepository] interface which holds an array of users in memory.
+ * Does not save data to disk, not optimized for large amounts of data, cannot handle concurrent
+ * modification.
+ */
 class SimpleScoreRepository: ScoreRepository {
 
     private val userList: MutableList<User> = mutableListOf()

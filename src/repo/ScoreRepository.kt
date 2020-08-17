@@ -1,5 +1,8 @@
 package com.tangledwebgames.repo
 
+/**
+ * An interface for a database which holds user & score data.
+ */
 interface ScoreRepository {
 
     fun addUser(name: String): User

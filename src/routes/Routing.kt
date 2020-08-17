@@ -13,15 +13,8 @@ import io.ktor.application.ApplicationCall
 import io.ktor.routing.*
 import io.ktor.util.pipeline.PipelineContext
 
-typealias Context = PipelineContext<Unit, ApplicationCall>
-typealias RequestResolver = suspend Context.() -> Unit
-
-internal object ParamKeys {
-    const val USER_ID = "userId"
-    const val SCORE = "score"
-    const val NAME = "name"
-    const val COUNT = "count"
-}
+internal typealias Context = PipelineContext<Unit, ApplicationCall>
+internal typealias RequestResolver = suspend Context.() -> Unit
 
 fun Routing.routingMain() {
     route("/user/{$USER_ID}") {
