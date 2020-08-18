@@ -25,14 +25,6 @@ internal object Errors {
         }
     }
 
-    suspend fun Context.missingParameter(missingParam: String? = null) {
-        textError {
-            missingParam?.let {
-                "Missing required parameter \'$it\'"
-            } ?: "Missing required parameter(s)"
-        }
-    }
-
     suspend fun Context.invalidUserId() {
         textError("${ParamKeys.USER_ID} must be a valid long")
     }

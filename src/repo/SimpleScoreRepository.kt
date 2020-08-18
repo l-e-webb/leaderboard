@@ -60,4 +60,10 @@ class SimpleScoreRepository: ScoreRepository {
         return userList.sortedByDescending { it.highScore }
             .take(numScores)
     }
+
+    override suspend fun clear() {
+        synchronized(userList) {
+            userList.clear()
+        }
+    }
 }

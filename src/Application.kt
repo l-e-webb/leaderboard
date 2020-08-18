@@ -1,6 +1,7 @@
 package com.tangledwebgames
 
 import com.fasterxml.jackson.databind.SerializationFeature
+import com.tangledwebgames.repo.RepositoryProvider
 import com.tangledwebgames.routes.routingMain
 import io.ktor.application.Application
 import io.ktor.application.call
@@ -17,6 +18,7 @@ fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 @Suppress("unused") // Referenced in application.conf
 @kotlin.jvm.JvmOverloads
 fun Application.module(testing: Boolean = false) {
+    RepositoryProvider.isTest = testing
     install(ContentNegotiation) {
         jackson {
             enable(SerializationFeature.INDENT_OUTPUT)
@@ -26,6 +28,7 @@ fun Application.module(testing: Boolean = false) {
         exception<Throwable> {
             call.respond(HttpStatusCode.InternalServerError)
         }
+
     }
 
     routing {

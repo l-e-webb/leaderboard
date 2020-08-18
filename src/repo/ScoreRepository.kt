@@ -26,4 +26,6 @@ interface ScoreRepository {
     }
 
     fun getTopScores(numScores: Int = 10): List<User>
+
+    suspend fun clear()
 }

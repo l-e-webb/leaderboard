@@ -14,14 +14,15 @@ import io.ktor.response.respond
 
 internal object Resolvers {
 
-    private val repo = RepositoryProvider.scoreRepository
+    private val repo
+        get() = RepositoryProvider.scoreRepository
 
     val getUser: RequestResolver = {
         call.parameters[USER_ID]?.toLongOrNull()?.let { id ->
             repo.getUser(id)?.let {
                 call.respond(HttpStatusCode.OK, it)
             } ?: userNotFound(id)
-        }
+        } ?: invalidUserId()
     }
 
     val newUser: RequestResolver = {
@@ -50,7 +51,7 @@ internal object Resolvers {
                     call.respond(HttpStatusCode.OK, it)
                 }
             } else {
-                textError("At least one of query parameters $NAME and $SCORE must be provided. $SCORE must be a valid long.")
+                textError("At least one of query parameters $NAME and $SCORE must be provided. $SCORE must be a valid long")
             }
         } ?: invalidUserId()
     }
