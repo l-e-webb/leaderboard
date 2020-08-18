@@ -9,9 +9,9 @@ import com.tangledwebgames.routes.Resolvers.getUser
 import com.tangledwebgames.routes.Resolvers.newUser
 import com.tangledwebgames.routes.Resolvers.postUserScore
 import com.tangledwebgames.routes.Resolvers.updateUser
-import io.ktor.application.ApplicationCall
+import io.ktor.application.*
 import io.ktor.routing.*
-import io.ktor.util.pipeline.PipelineContext
+import io.ktor.util.pipeline.*
 
 internal typealias Context = PipelineContext<Unit, ApplicationCall>
 internal typealias RequestResolver = suspend Context.() -> Unit

@@ -8,9 +8,9 @@ import com.tangledwebgames.routes.ParamKeys.COUNT
 import com.tangledwebgames.routes.ParamKeys.NAME
 import com.tangledwebgames.routes.ParamKeys.SCORE
 import com.tangledwebgames.routes.ParamKeys.USER_ID
-import io.ktor.application.call
-import io.ktor.http.HttpStatusCode
-import io.ktor.response.respond
+import io.ktor.application.*
+import io.ktor.http.*
+import io.ktor.response.*
 
 internal object Resolvers {
 
@@ -37,21 +37,27 @@ internal object Resolvers {
                 userNotFound(id)
                 return@let
             }
-            var hasParams = false
-            call.request.queryParameters[NAME]?.let { name ->
-                repo.setName(id, name)
-                hasParams = true
-            }
-            call.request.queryParameters[SCORE]?.toLongOrNull()?.let { score ->
-                repo.setScore(id, score)
-                hasParams = true
-            }
-            if (hasParams) {
-                repo.getUser(id)?.let {
-                    call.respond(HttpStatusCode.OK, it)
-                }
-            } else {
+
+            val name = call.request.queryParameters[NAME]
+            val score = call.request.queryParameters[SCORE]
+            if (
+                // Score is present, but not a valid long
+                score != null && score.toLongOrNull() == null
+                // Or, neither name nor score is present
+                || name == null && score == null
+            ) {
                 textError("At least one of query parameters $NAME and $SCORE must be provided. $SCORE must be a valid long")
+                return@let
+            }
+
+            name?.let { it ->
+                repo.setName(id, it)
+            }
+            score?.toLongOrNull()?.let { it ->
+                repo.setScore(id, it)
+            }
+            repo.getUser(id)?.let {
+                call.respond(HttpStatusCode.OK, it)
             }
         } ?: invalidUserId()
     }

@@ -8,7 +8,6 @@ import io.ktor.server.testing.TestApplicationCall
 import io.ktor.server.testing.TestApplicationEngine
 import io.ktor.server.testing.handleRequest
 import io.ktor.server.testing.withTestApplication
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
@@ -18,6 +17,7 @@ import org.junit.Assert
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Test
+import kotlin.random.Random
 
 class ApplicationTest {
     companion object {
@@ -27,6 +27,14 @@ class ApplicationTest {
         private val USER_0 = User(0, USER_NAME_0, 0)
         private val USER_1 = User(1, USER_NAME_1, 0)
         private val USER_2 = User(2, USER_NAME_2, 0)
+
+        private val TOP_SCORES_TEST_USER_NAMES = List(50) {
+            "User $it"
+        }
+        private val TOP_SCORES_TEST_USER_SCORES = List(50) {
+            Random.nextInt(0, 50).toLong()
+        }
+        private val TOP_SCORES_TEST_USER_SCORES_SORTED = TOP_SCORES_TEST_USER_SCORES.sortedDescending()
     }
 
     private val repo
@@ -41,13 +49,13 @@ class ApplicationTest {
 
     @Test
     fun getUser_single() = applicationTest {
-        givenUsersAdded(USER_NAME_0)
+        givenUsersAdded()
         getValidUser(USER_0)
     }
 
     @Test
     fun getUser_multiple() = applicationTest {
-        givenUsersAdded(USER_NAME_0, USER_NAME_1, USER_NAME_2)
+        givenUsersAdded()
         getValidUser(USER_0)
         getValidUser(USER_1)
         getValidUser(USER_2)
@@ -55,14 +63,14 @@ class ApplicationTest {
 
     @Test
     fun getUser_nonexistent() = applicationTest {
-        givenUsersAdded(USER_NAME_0)
-        checkNoUsers(1)
-        getNonexistentUser(1)
+        givenUsersAdded()
+        checkNoUsers(3)
+        getNonexistentUser(3)
     }
 
     @Test
     fun getUser_invalidId() = applicationTest {
-        givenUsersAdded(USER_NAME_0)
+        givenUsersAdded()
         getUserInvalidId(USER_NAME_0)
     }
 
@@ -90,28 +98,28 @@ class ApplicationTest {
 
     @Test
     fun updateUser_single_nameOnly() = applicationTest {
-        givenUsersAdded(USER_NAME_0)
+        givenUsersAdded()
         updateValidUser(userId = 0, name = USER_NAME_1)
         checkUserName(0, USER_NAME_1)
     }
 
     @Test
     fun updateUser_single_scoreOnly() = applicationTest {
-        givenUsersAdded(USER_NAME_0)
+        givenUsersAdded()
         updateValidUser(userId = 0, score = 5)
         checkUserScore(0, 5)
     }
 
     @Test
     fun updateUser_since_nameAndScore() = applicationTest {
-        givenUsersAdded(USER_NAME_0)
+        givenUsersAdded()
         updateValidUser(userId = 0, name = USER_NAME_1, score = 5)
         checkUser(User(0, USER_NAME_1, 5))
     }
 
     @Test
     fun updateUser_multiple_nameAndScore() = applicationTest {
-        givenUsersAdded(USER_NAME_0, USER_NAME_1, USER_NAME_2)
+        givenUsersAdded()
         updateValidUser(0, USER_NAME_1, 5)
         updateValidUser(1, USER_NAME_2, 6)
         updateValidUser(2, USER_NAME_0, 7)
@@ -124,26 +132,130 @@ class ApplicationTest {
 
     @Test
     fun updateUser_nonexistent() = applicationTest {
-        givenUsersAdded(USER_NAME_0)
-        updateNonExistentUser(1, name = "Any")
+        givenUsersAdded()
+        checkNoUsers(3)
+        updateNonExistentUser(3, name = "Any", score = 5)
     }
 
     @Test
     fun updateUser_noParams() = applicationTest {
-        givenUsersAdded(USER_NAME_0)
+        givenUsersAdded()
         updateUserNoParams(0)
+        checkUser(USER_0)
     }
 
     @Test
-    fun updateUser_invalidScore() = applicationTest {
-        givenUsersAdded(USER_NAME_0)
+    fun updateUser_invalidScoreNoName() = applicationTest {
+        givenUsersAdded()
+        updateUserInvalidScore(0, name=USER_NAME_1, score="Twenty")
+        checkUser(USER_0)
+    }
+
+    @Test
+    fun updateUser_invalidScoreWithName() = applicationTest {
+        givenUsersAdded()
         updateUserInvalidScore(0, name = USER_NAME_1, score="Twenty")
+        checkUser(USER_0)
     }
 
     @Test
     fun updateUser_invalidId() = applicationTest {
-        givenUsersAdded(USER_NAME_0)
+        givenUsersAdded()
         updateUserInvalidUserId(userId = USER_NAME_0, name = USER_NAME_1, score = 5)
+        checkUser(USER_0)
+    }
+
+    @Test
+    fun newScore_single_higherScore() = applicationTest {
+        givenUsersAdded()
+        newScoreValidUser(0, 5, 5)
+        checkUserScore(0, 5)
+    }
+
+    @Test
+    fun newScore_single_lowerScore() = applicationTest {
+        givenUsersAdded()
+        runBlocking {
+            repo.setScore(0, 5)
+        }
+        newScoreValidUser(0, 2, 5)
+        checkUserScore(0, 5)
+    }
+
+    @Test
+    fun newScore_multiple() = applicationTest {
+        givenUsersAdded()
+        runBlocking {
+            repo.setScore(0, 5)
+            repo.setScore(1, 6)
+            repo.setScore(2, 7)
+        }
+        newScoreValidUser(0, 3, 5)
+        newScoreValidUser(1, 10, 10)
+        newScoreValidUser(2, 7, 7)
+        checkUserScores(
+            Pair(0, 5),
+            Pair(1, 10),
+            Pair(2, 7)
+        )
+    }
+
+    @Test
+    fun newScore_noParam() = applicationTest {
+        givenUsersAdded()
+        newScoreNoParam(0)
+        checkUserScore(0, 0)
+    }
+
+    @Test
+    fun newScore_invalidScore() = applicationTest {
+        givenUsersAdded()
+        newScoreInvalidScore(0, "Seven")
+        checkUserScore(0, 0)
+    }
+
+    @Test
+    fun newScore_nonexistentUser() = applicationTest {
+        givenUsersAdded()
+        checkNoUsers(3)
+        newScoreNonexistentUser(3, 5)
+        checkNoUsers(3)
+    }
+
+    @Test
+    fun newScore_invalidId() = applicationTest {
+        givenUsersAdded()
+        newScoreInvalidUserId(USER_NAME_0, 5)
+        checkUserScore(0, 0)
+    }
+
+    @Test
+    fun topScores_noUsers() = applicationTest {
+        getTopScorers(10.toString(), emptyList())
+    }
+
+    @Test
+    fun topScores_noParam() = applicationTest {
+        givenTopScoresTestUsersAdded()
+        getTopScorers(expectedScoreList = TOP_SCORES_TEST_USER_SCORES_SORTED.take(10))
+    }
+
+    @Test
+    fun topScores_takeFifteen() = applicationTest {
+        givenTopScoresTestUsersAdded()
+        getTopScorers(15.toString(), TOP_SCORES_TEST_USER_SCORES_SORTED.take(15))
+    }
+
+    @Test
+    fun topScores_takeOneHundred() = applicationTest {
+        givenTopScoresTestUsersAdded()
+        getTopScorers(100.toString(), TOP_SCORES_TEST_USER_SCORES_SORTED)
+    }
+
+    @Test
+    fun topScores_invalidParam() = applicationTest {
+        givenTopScoresTestUsersAdded()
+        getTopScorers("Twenty", TOP_SCORES_TEST_USER_SCORES_SORTED.take(10))
     }
 
     private fun applicationTest(testBlock: TestApplicationEngine.() -> Unit) =
@@ -262,6 +374,69 @@ class ApplicationTest {
         }
     }
 
+    private fun TestApplicationEngine.newScore(
+        userId: String,
+        score: String? = null,
+        testBlock: TestApplicationCall.() -> Unit
+    ) {
+        val uri = "/user/$userId/newScore" + if (score != null) { "?score=$score" } else { "" }
+        handleRequest(HttpMethod.Post, uri).apply(testBlock)
+    }
+
+    private fun TestApplicationEngine.newScoreValidUser(userId: Long, newScore: Long, expectedScore: Long) {
+        newScore(userId.toString(), newScore.toString()) {
+            assertStatus(HttpStatusCode.OK)
+            try {
+                val returnedUser = Json.decodeFromString<User>(response.content ?: "")
+                assertEquals(userId, returnedUser.id)
+                assertEquals(expectedScore, returnedUser.highScore)
+            } catch (e: JsonException) {
+                Assert.fail(e.message)
+            }
+        }
+    }
+
+    private fun TestApplicationEngine.newScoreInvalidScore(userId: Long, newScore: String) {
+        newScore(userId.toString(), newScore) {
+            assertStatus(HttpStatusCode.OK)
+            assertEquals(
+                "Must include query parameter score with valid long value",
+                response.content
+            )
+        }
+    }
+
+    private fun TestApplicationEngine.newScoreNoParam(userId: Long) {
+        newScore(userId.toString()) {
+            assertFalse(requestHandled)
+        }
+    }
+
+    private fun TestApplicationEngine.newScoreNonexistentUser(userId: Long, newScore: Long) {
+        newScore(userId.toString(), newScore.toString()) {
+            userNotFound(userId.toString())
+        }
+    }
+
+    private fun TestApplicationEngine.newScoreInvalidUserId(userId: String, newScore: Long) {
+        newScore(userId, newScore.toString()) {
+            invalidUserId()
+        }
+    }
+
+    private fun TestApplicationEngine.getTopScorers(count: String? = null, expectedScoreList: List<Long>) {
+        val uri = "/topScores" + if (count != null) { "?count=$count" } else { "" }
+        handleRequest(HttpMethod.Get, uri).apply {
+            assertStatus(HttpStatusCode.OK)
+            assertEquals(
+                expectedScoreList,
+                Json.decodeFromString<List<User>>(response.content ?: "{}")
+                    .map { it.highScore }
+                    .sortedDescending()
+            )
+        }
+    }
+
     private fun TestApplicationCall.userNotFound(userId: String) {
         assertStatus(HttpStatusCode.OK)
         assertEquals("No user found with ID $userId", response.content)
@@ -280,10 +455,23 @@ class ApplicationTest {
         )
     }
 
+    private fun givenUsersAdded() {
+        givenUsersAdded(USER_NAME_0, USER_NAME_1, USER_NAME_2)
+    }
+
     private fun givenUsersAdded(vararg names: String) {
         runBlocking {
             names.forEach {
                 repo.addUser(it)
+            }
+        }
+    }
+
+    private fun givenTopScoresTestUsersAdded() {
+        givenUsersAdded(*TOP_SCORES_TEST_USER_NAMES.toTypedArray())
+        runBlocking {
+            TOP_SCORES_TEST_USER_SCORES.forEachIndexed { index, score ->
+                repo.setScore(index.toLong(), score)
             }
         }
     }

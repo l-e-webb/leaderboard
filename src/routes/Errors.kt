@@ -1,8 +1,8 @@
 package com.tangledwebgames.routes
 
-import io.ktor.application.call
-import io.ktor.http.HttpStatusCode
-import io.ktor.response.respondText
+import io.ktor.application.*
+import io.ktor.http.*
+import io.ktor.response.*
 
 internal object Errors {
 
