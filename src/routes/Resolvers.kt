@@ -11,6 +11,10 @@ import com.tangledwebgames.routes.ParamKeys.USER_ID
 import io.ktor.application.*
 import io.ktor.http.*
 import io.ktor.response.*
+import io.ktor.util.pipeline.*
+
+internal typealias Context = PipelineContext<Unit, ApplicationCall>
+internal typealias RequestResolver = suspend Context.() -> Unit
 
 internal object Resolvers {
 

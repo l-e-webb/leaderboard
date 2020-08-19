@@ -9,12 +9,7 @@ import com.tangledwebgames.routes.Resolvers.getUser
 import com.tangledwebgames.routes.Resolvers.newUser
 import com.tangledwebgames.routes.Resolvers.postUserScore
 import com.tangledwebgames.routes.Resolvers.updateUser
-import io.ktor.application.*
 import io.ktor.routing.*
-import io.ktor.util.pipeline.*
-
-internal typealias Context = PipelineContext<Unit, ApplicationCall>
-internal typealias RequestResolver = suspend Context.() -> Unit
 
 fun Routing.routingMain() {
     route("/user/{$USER_ID}") {
